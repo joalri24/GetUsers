@@ -7,29 +7,27 @@ namespace GetUsers
     {
         static void Main(string[] args)
         {
-
-
             Console.WriteLine("Get Users!!");
 
             var connData = new ConnectionData()
             {
-                Host = "xx.xx.xx.xx",
+                Host = "x.x.x.x",
                 Port = 22,
-                Login = "fakeUser",
+                Login = "root",
                 Password = "fakePass"
             };
 
-            GetUsers(connData);
+            GetUnixUsers(connData);
 
             Console.WriteLine("Press any key to continue.");
             Console.ReadKey();
         }
 
         /// <summary>
-        /// Make a connection to the target machine and gets all users.
+        /// Makes a connection to a Unix machine and gets all users.
         /// </summary>
         /// <param name="connData"></param>
-        static void GetUsers(ConnectionData connData)
+        static void GetUnixUsers(ConnectionData connData)
         {
             #region Set Connection Info
             var ConnInfo = new ConnectionInfo(connData.Host,connData.Port, connData.Login,
@@ -45,11 +43,12 @@ namespace GetUsers
                 Console.WriteLine("Connecting...");
                 sshclient.Connect();
                 Console.WriteLine("Connection succeded.");
-                using (var cmd = sshclient.CreateCommand("pwd"))
+                using (var cmd = sshclient.CreateCommand("cat /etc/passwd")) // this file stores the machine users.
                 {
                     cmd.Execute();
                     Console.WriteLine("Command>" + cmd.CommandText);
-                    Console.WriteLine($"Return Value = {cmd.Result}");
+                    ProccessPasswdContent(cmd.Result);
+                    //Console.WriteLine(cmd.Result);
                 }               
                 sshclient.Disconnect();
                 Console.WriteLine("Connection Closed.");
@@ -58,6 +57,18 @@ namespace GetUsers
             #endregion
         }
 
+
+        private static void ProccessPasswdContent(string passwdContent)
+        {
+            string[] lines = passwdContent.TrimEnd().Split('\n');
+            foreach (var line in lines)
+            {
+                Console.WriteLine(line);
+                
+            }
+        }
+
+        #region Auxiliar data structures
         /// <summary>
         /// Data needed to make the connection to a Unix machine.
         /// </summary>
@@ -69,5 +80,6 @@ namespace GetUsers
             public string Password { get; set; }
 
         }
+        #endregion
     }
 }
