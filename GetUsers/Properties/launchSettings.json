@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "GetUsers": {
+      "commandName": "Project",
+      "commandLineArgs": "ips.txt"
+    }
+  }
+}

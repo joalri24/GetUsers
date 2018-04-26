@@ -7,24 +7,60 @@ namespace GetUsers
     class Program
     {
         static List<string> linesToPrint = new List<string>();
+        static string[] hosts;
 
+        #region Main
         static void Main(string[] args)
         {
+
             Console.WriteLine("Get Users!!");
 
-            var connData = new ConnectionData()
+            #region Prompt Password
+            ConsoleKeyInfo key;
+            Console.Write("Root password: ");
+            string pass = "";
+            do
             {
-                Host = "x.x.x.x",
-                Port = 22,
-                Login = "root",
-                Password = "fakePass"
-            };
+                key = Console.ReadKey(true);
+                // Backspace Should Not Work
+                if (key.Key != ConsoleKey.Backspace && key.Key != ConsoleKey.Enter)
+                {
+                    pass += key.KeyChar;
+                    Console.Write("*");
+                }
+                else
+                {
+                    if (key.Key == ConsoleKey.Backspace && pass.Length > 0)
+                    {
+                        pass = pass.Substring(0, (pass.Length - 1));
+                        Console.Write("\b \b");
+                    }
+                }
+            }
+            // Stop receving Keys Once Enter is Pressed
+            while (key.Key != ConsoleKey.Enter);
+            Console.Write("\n");
+            #endregion
 
-            GetUnixUsers(connData);
+            ReadHostsFile(args[0]);
 
-            Console.WriteLine("Press any key to continue.");
+            foreach (var host in hosts)
+            {
+                var connData = new ConnectionData()
+                {
+                    Host = host,
+                    Port = 22,
+                    Login = "root",
+                    Password = pass
+                };
+
+                GetUnixUsers(connData);
+            }         
+
+            Console.WriteLine("Press enter to finish");
             Console.Read();
         }
+        #endregion
 
         /// <summary>
         /// Makes a connection to a Unix machine and gets all users.
@@ -33,7 +69,7 @@ namespace GetUsers
         static void GetUnixUsers(ConnectionData connData)
         {
             var shadowUsers = new Dictionary<string, UnixUser>();
-            
+           
             #region Set Connection Info
             var ConnInfo = new ConnectionInfo(connData.Host,connData.Port, connData.Login,
                 new AuthenticationMethod[] {
@@ -45,9 +81,17 @@ namespace GetUsers
             #region Connect and execute commands
             using (var sshclient = new SshClient(ConnInfo))
             {
-                Console.WriteLine("Connecting...");
-                sshclient.Connect();
-                Console.WriteLine("Connection succeded.");
+                Console.WriteLine($"Connecting to {connData.Host}...");
+                try
+                {
+                    sshclient.Connect();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Connection failed: {e.Message}");
+                    return;
+                }
+                Console.WriteLine("Connection succeded");
                 using (var cmd = sshclient.CreateCommand("cat /etc/shadow")) // this file stores the machine users with the password status.
                 {
                     cmd.Execute();
@@ -63,13 +107,17 @@ namespace GetUsers
                     //Console.WriteLine(cmd.Result);
                 }               
                 sshclient.Disconnect();
-                Console.WriteLine("Connection Closed.");
+                Console.WriteLine("Connection Closed");
 
             }
             #endregion
         }
 
-
+        /// <summary>
+        /// Parses the passwd file to get the non-default accounts.
+        /// </summary>
+        /// <param name="passwdContent"></param>
+        /// <param name="users"></param>
         private static void ProccessPasswdContent(string passwdContent, Dictionary<string, UnixUser> users)
         {
             string[] lines = passwdContent.TrimEnd().Split('\n');
@@ -90,9 +138,15 @@ namespace GetUsers
             }
         }
 
-        private static void ProccessShadowContent(string passwdContent, ref Dictionary<string,UnixUser> users, string host)
+        /// <summary>
+        /// Parses the shadow file to get the accounts and their status.
+        /// </summary>
+        /// <param name="content"></param>
+        /// <param name="users"></param>
+        /// <param name="host"></param>
+        private static void ProccessShadowContent(string content, ref Dictionary<string,UnixUser> users, string host)
         {
-            string[] lines = passwdContent.TrimEnd().Split('\n');
+            string[] lines = content.TrimEnd().Split('\n');
             foreach (var line in lines)
             {
                 // Shadow line example:
@@ -119,6 +173,12 @@ namespace GetUsers
             }
         }
         #region Auxiliar data structures
+
+        private static void ReadHostsFile(string fileName)
+        {
+            hosts = System.IO.File.ReadAllLines(fileName);
+        }
+
         /// <summary>
         /// Data needed to make the connection to a Unix machine.
         /// </summary>
@@ -128,7 +188,6 @@ namespace GetUsers
             public int Port { get; set; }
             public string Login { get; set; }
             public string Password { get; set; }
-
         }
 
         private struct UnixUser
