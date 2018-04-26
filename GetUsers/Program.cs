@@ -14,10 +14,11 @@ namespace GetUsers
         {
 
             Console.WriteLine("Get Users!!");
+            linesToPrint.Add("Host;Login;Status");
 
             #region Prompt Password
             ConsoleKeyInfo key;
-            Console.Write("Root password: ");
+            Console.Write("Root password:");
             string pass = "";
             do
             {
@@ -55,8 +56,9 @@ namespace GetUsers
                 };
 
                 GetUnixUsers(connData);
-            }         
-
+            }
+            PrintResults();
+            Console.WriteLine("Report printed.");
             Console.WriteLine("Press enter to finish");
             Console.Read();
         }
@@ -134,6 +136,7 @@ namespace GetUsers
                     continue; 
 
                 Console.WriteLine(users[userData[0]].ToString());
+                linesToPrint.Add(users[userData[0]].ToStringCsv());
                 
             }
         }
@@ -172,6 +175,11 @@ namespace GetUsers
                 users.Add(userData[0],new UnixUser() { Login = userData[0], Host = host, Status = userStatus });
             }
         }
+
+        static private void PrintResults()
+        {
+            System.IO.File.WriteAllLines("UnixUsers.csv", linesToPrint);
+        }
         #region Auxiliar data structures
 
         private static void ReadHostsFile(string fileName)
@@ -206,7 +214,14 @@ namespace GetUsers
             {
                 return $"{Host} {Login} {Status}";
             }
+
+            public string ToStringCsv()
+            {
+                return $"{Host};{Login};{Status}";
+            }
         }
         #endregion
+
+
     }
 }
