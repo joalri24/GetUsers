@@ -109,7 +109,6 @@ namespace GetUsers
                     //Console.WriteLine(cmd.Result);
                 }               
                 sshclient.Disconnect();
-                Console.WriteLine("Connection Closed");
 
             }
             #endregion
@@ -135,7 +134,7 @@ namespace GetUsers
                 if (userId != 0 && userId <= 999)
                     continue; 
 
-                Console.WriteLine(users[userData[0]].ToString());
+                //Console.WriteLine(users[userData[0]].ToString());
                 linesToPrint.Add(users[userData[0]].ToStringCsv());
                 
             }
@@ -198,6 +197,9 @@ namespace GetUsers
             public string Password { get; set; }
         }
 
+        /// <summary>
+        /// Contains a user's login, its status and the host where it belongs.
+        /// </summary>
         private struct UnixUser
         {
             public enum UnixStatus
